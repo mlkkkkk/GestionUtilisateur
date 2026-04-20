@@ -24,7 +24,7 @@ public:
     ~LoginWindow();
 
 signals:
-    void loginSuccess();
+    void loginSuccess(int userId);  // ← ajouter userIds
 
 private slots:
     void handleLogin();

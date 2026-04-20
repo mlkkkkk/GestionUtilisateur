@@ -1,0 +1,543 @@
+  POO C++ — Résumé Complet  
+Chapitres 1, 3, 4 & 5  |  Document autorisé au test pratique
+ 
+Chapitre 1 : La Programmation Orientée Objet
+1.1  Concepts fondamentaux
+La POO regroupe les données et les traitements dans une même entité appelée Objet. Cela facilite la maintenance, la réutilisation du code et le travail en équipe.
+
+Objet = Attributs + Méthodes
+• Attributs : données caractéristiques (variables membres)
+• Méthodes  : traitements associés (fonctions membres)
+• Un objet est une INSTANCE d'une classe
+
+1.2  Classe et Instance
+Une classe définit un nouveau type. Une instance (objet) est une variable de ce type.
+
+// Déclaration d'une classe
+class Rectangle {
+  // attributs (données)
+  double largeur;
+  double hauteur;
+
+public:
+  // méthodes (traitements)
+  double surface() {
+      return largeur * hauteur;
+  }
+};
+
+// Déclaration d'une instance
+Rectangle rect1;   // rect1 est un objet de type Rectangle
+
+1.3  Droits d'accès : private / protected / public
+
+Modificateur	Même classe	Classe dérivée	Dehors
+private	✅ Oui	❌ Non	❌ Non
+protected	✅ Oui	✅ Oui	❌ Non
+public	✅ Oui	✅ Oui	✅ Oui
+
+Règle d'or
+→  Les attributs doivent être private ou protected
+→  Les méthodes accessibles de l'extérieur doivent être public
+→  On accède aux attributs privés via des getters/setters
+
+1.4  Convention de nommage
+•	Classe  : première lettre en Majuscule  → class Rectangle
+•	Attributs et méthodes : première lettre minuscule → largeur, surface()
+•	Nom composé : camelCase → nomComplet, calculerSurface()
+•	Déclaration de la classe + entêtes méthodes → fichier .h
+•	Corps des méthodes → fichier .cpp
+ 
+Chapitre 3 : Constructeurs & Destructeur
+3.1  Cycle de vie d'un objet
+Tout objet passe par trois phases : Création → Utilisation → Destruction.
+
+Objet statique  :  Création = déclaration    |  Mort = fin de portée
+Objet dynamique :  Création = new            |  Mort = delete
+
+3.2  Définition d'un constructeur
+•	Même nom que la classe
+•	Pas de valeur de retour (même pas void)
+•	Appelé automatiquement à la création de l'objet
+•	Il en existe 3 types : par défaut, paramétré, par copie
+
+A) Constructeur par défaut (sans paramètre)
+class Compte {
+    int ref;
+    double solde;
+public:
+    Compte() {          // constructeur par défaut
+        ref = 0;
+        solde = 0.0;
+    }
+};
+
+Compte c;    // appel automatique du constructeur par défaut
+
+B) Constructeur paramétré (avec arguments)
+class Compte {
+    int ref;
+    double solde;
+public:
+    Compte() { ref=0; solde=0; }
+    Compte(int r, double s) {   // constructeur paramétré
+        ref = r;
+        solde = s;
+    }
+};
+
+Compte c1(1, 200.0);   // appel du constructeur paramétré
+
+⚠️ Attention
+Si vous définissez SEULEMENT un constructeur paramétré (sans définir le constructeur par défaut),
+alors l'instanciation sans argument devient IMPOSSIBLE :  Compte c;  →  ERREUR
+
+C) Constructeur de copie
+Invoqué lors de l'affectation d'un objet à un autre (clonage). L'objet source doit être passé par référence.
+class Compte {
+public:
+    // Prototype 1
+    Compte(Compte &c);
+    // Prototype 2 (recommandé)
+    Compte(const Compte &c);
+};
+
+Compte c1(1, 200.0);
+Compte c2 = c1;   // appel du constructeur de copie
+
+3.3  Opérateur d'affectation  (operator=)
+Différent du constructeur de copie : affecte les membres de deux objets DÉJÀ instanciés.
+Compte c1(1, 200.0);
+Compte c2(2, 500.0);
+c2 = c1;    // opérateur d'affectation (les deux existent déjà)
+
+3.4  Destructeur
+•	Identificateur : ~NomClasse()
+•	Sans type de retour, sans paramètre, ne peut pas être surchargé
+•	Public, appelé automatiquement à la destruction de l'objet
+
+class Compte {
+public:
+    ~Compte() {
+        cout << "Destructeur appelé" << endl;
+    }
+};
+
+Le destructeur est appelé dans l'ordre INVERSE de l'appel des constructeurs.
+ 
+Chapitre 4 (Partie 2) : Attributs Dynamiques & Règle de Trois
+4.1  Attributs dynamiques
+Quand un objet doit gérer des données dont la taille n'est pas connue à la compilation, on utilise des attributs dynamiques (pointeurs + new/delete).
+
+class Etudiant {
+    string nom;
+    int nbNotes;
+    double* notes;    // attribut dynamique (pointeur)
+public:
+    Etudiant(string n, int nb) {
+        nom = n;
+        nbNotes = nb;
+        notes = new double[nb];   // allocation dynamique
+    }
+};
+
+4.2  La Règle de Trois ⭐
+Toute classe qui gère un attribut dynamique DOIT redéfinir ces 3 méthodes :
+
+Règle de Trois
+1. Destructeur           → libère la mémoire allouée
+2. Constructeur de copie → copie profonde (indépendante)
+3. Opérateur d'affectation → copie profonde pour objets déjà instanciés
+
+1) Destructeur — libérer la mémoire
+Etudiant::~Etudiant() {
+    delete[] notes;   // libérer le tableau dynamique
+}
+
+2) Constructeur de copie — copie profonde
+Sans redéfinition, deux objets pointent vers la MÊME zone mémoire → problème à la destruction !
+Etudiant::Etudiant(const Etudiant& e) {
+    nom     = e.nom;
+    nbNotes = e.nbNotes;
+    notes   = new double[nbNotes];   // nouvelle allocation
+    for (int i = 0; i < nbNotes; i++)
+        notes[i] = e.notes[i];       // copie des valeurs
+}
+
+3) Opérateur d'affectation — copie profonde
+Etudiant& Etudiant::operator=(const Etudiant& e) {
+    if (this == &e) return *this;   // éviter A = A
+    delete[] notes;                 // libérer l'ancienne mémoire
+    nom     = e.nom;
+    nbNotes = e.nbNotes;
+    notes   = new double[nbNotes];
+    for (int i = 0; i < nbNotes; i++)
+        notes[i] = e.notes[i];
+    return *this;
+}
+ 
+Chapitre 4 (Partie 1 & 2) : Collections STL
+4.3  La librairie STL
+La STL (Standard Template Library) fournit des classes, conteneurs et algorithmes génériques.
+
+Conteneur	Type	Caractéristiques
+vector<T>	Séquence	Accès direct O(1), insertion coûteuse
+list<T>	Séquence	Doublement chaînée, insertion rapide
+map<K,V>	Associatif	Clé unique, trié, recherche rapide
+set<T>	Associatif	Clé=valeur, pas de doublons
+
+4.4  La classe string
+#include <string>
+using namespace std;
+
+string s1;              // chaîne vide
+string s2 = "Bonjour"; // initialisation
+string s3(s2);          // constructeur de copie
+
+s1.size();              // taille
+s1 + s2;                // concaténation
+s1 == s2;               // comparaison
+
+4.5  Tableaux statiques  (array)
+#include <array>
+array<int, 4> tab = {1, 2, 3, 4};
+
+tab.size();         // taille
+tab[0];             // accès par index
+tab.at(1);          // accès avec vérification
+
+for (int i = 0; i < tab.size(); i++)
+    cout << tab[i] << endl;
+
+4.6  Tableaux dynamiques  (vector)
+#include <vector>
+#include <algorithm>   // pour sort
+
+vector<int> v;         // vecteur vide
+
+v.push_back(10);       // ajouter en fin
+v.pop_back();          // supprimer en fin
+v.size();              // taille actuelle
+v.front();             // premier élément
+v.back();              // dernier élément
+sort(v.begin(), v.end());  // tri croissant
+
+// Parcours par index
+for (int i = 0; i < v.size(); i++)
+    cout << v[i] << endl;
+
+// Parcours par itérateur
+for (vector<int>::iterator it = v.begin(); it != v.end(); ++it)
+    cout << *it << endl;
+
+4.7  Listes doublement chaînées  (list)
+#include <list>
+
+list<int> lst;
+
+lst.push_back(5);      // ajouter en fin
+lst.push_front(1);     // ajouter en début
+lst.size();            // taille
+
+// Insertion à une position (avant l'itérateur)
+list<int>::iterator it = lst.begin();
+lst.insert(it, 99);
+
+// Suppression à une position
+lst.erase(it);
+
+// Parcours par itérateur
+for (list<int>::iterator it = lst.begin(); it != lst.end(); ++it)
+    cout << *it << endl;
+
+4.8  Tables associatives  (map)
+#include <map>
+
+map<string, int> m;
+
+m["janvier"] = 31;     // insertion / modification
+m["fevrier"] = 29;
+m.size();               // nombre d'éléments
+
+// Recherche
+m.find("janvier")->second;   // retourne la valeur
+
+// Parcours
+for (map<string,int>::iterator it = m.begin(); it != m.end(); ++it)
+    cout << it->first << " -> " << it->second << endl;
+
+4.9  Itérateurs — rappel
+•	Un itérateur est une généralisation d'un pointeur
+•	*it  → accéder à l'élément pointé
+•	++it → passer à l'élément suivant
+•	begin() → premier élément  |  end() → après le dernier
+
+iterator vs const_iterator
+iterator           : parcours et modification autorisés
+const_iterator     : parcours seul (lecture uniquement)
+reverse_iterator   : parcours de la fin au début
+ 
+Chapitre 5 : Héritage
+5.1  Définition
+L'héritage est une technique permettant de construire une classe (fille/dérivée) à partir d'une classe existante (mère/base), en ajoutant de nouvelles caractéristiques.
+
+Terminologie
+Classe mère    = classe de base = superclasse
+Classe fille   = classe dérivée = sous-classe
+La classe fille HÉRITE les attributs et méthodes de la classe mère
+
+5.2  Syntaxe de l'héritage
+class ClasseMere {
+    // attributs et méthodes
+};
+
+// Syntaxe : class Fille : <mode> Mere
+class ClasseFille : public ClasseMere {
+    // attributs et méthodes SUPPLÉMENTAIRES
+};
+
+// ⚠️  Si aucun mode : héritage PRIVÉ par défaut
+// Mode recommandé : public
+
+5.3  Contrôle d'accès pendant l'héritage
+
+Mode / Base	public	protected	private
+public	public	protected	inaccessible
+protected	protected	protected	inaccessible
+private	private	private	inaccessible
+
+Recommandation : déclarer les attributs de la classe mère en protected pour qu'ils soient accessibles dans les classes dérivées.
+
+5.4  Héritage et Constructeur
+Si la classe mère a un constructeur paramétré, le constructeur de la classe fille DOIT l'appeler explicitement.
+
+class Employe {
+protected:
+    string nom;
+    float  salaireBase;
+public:
+    Employe(string n, float s) : nom(n), salaireBase(s) {}
+    void afficher() {
+        cout << "Nom: " << nom << " | Salaire: " << salaireBase << endl;
+    }
+};
+
+class Ouvrier : public Employe {
+private:
+    int heureSupp;
+public:
+    //         propres params     appel constructeur mère
+    Ouvrier(string n, float s, int h) : Employe(n, s) {
+        heureSupp = h;
+    }
+};
+
+Ordre d'appel
+Création  :  Constructeur MÈRE  →  puis  Constructeur FILLE
+Destruction: Destructeur FILLE  →  puis  Destructeur MÈRE
+(Les destructeurs sont appelés dans l'ordre INVERSE des constructeurs)
+
+5.5  Accès aux membres de la classe mère
+3 solutions pour accéder aux attributs privés de la classe mère dans la fille :
+
+Solution 1 : Appeler la méthode de la mère
+// Dans Ouvrier.cpp
+void Ouvrier::afficher() {
+    Employe::afficher();         // appel de la méthode de la mère
+    cout << "H.Supp: " << heureSupp << endl;
+}
+
+Solution 2 : Utiliser les getters de la mère
+// Ajouter dans Employe.h
+string getNom()      { return nom; }
+float  getSalaire()  { return salaireBase; }
+
+// Dans Ouvrier.cpp
+void Ouvrier::afficher() {
+    cout << getNom() << " " << getSalaire() << endl;
+    cout << heureSupp << endl;
+}
+
+Solution 3 : Rendre les attributs protected (recommandée)
+class Employe {
+protected:            // accessible dans les classes filles !
+    string nom;
+    float  salaireBase;
+};
+
+// Dans Ouvrier.cpp
+void Ouvrier::afficher() {
+    cout << nom << " " << salaireBase << endl;   // accès direct
+    cout << heureSupp << endl;
+}
+
+5.6  Redéfinition de méthodes
+La redéfinition consiste à fournir une nouvelle implémentation d'une méthode de la classe mère dans la classe fille, avec le MÊME nom et la MÊME signature.
+
+Redéfinition vs Surcharge
+Redéfinition (override) : même nom + même signature, dans la classe FILLE  →  remplace la méthode mère
+Surcharge (overload)    : même nom + signatures DIFFÉRENTES, dans la MÊME classe
+
+class Employe {
+protected:
+    string nom;
+    float  salaireBase;
+public:
+    Employe(string n, float s) : nom(n), salaireBase(s) {}
+    void afficher() {   // méthode originale
+        cout << "Nom: " << nom << " | Salaire: " << salaireBase << endl;
+    }
+};
+
+class Ouvrier : public Employe {
+private:
+    int heureSupp;
+public:
+    Ouvrier(string n, float s, int h) : Employe(n, s), heureSupp(h) {}
+
+    void afficher() {   // REDÉFINITION — même nom, même signature
+        Employe::afficher();             // appel version mère
+        cout << "H.Supp: " << heureSupp << endl;
+    }
+};
+
+ 
+Aide-Mémoire Rapide — Exercices TD5
+Exercice 1 : Article & ArticleEnSolde
+#include <iostream>
+#include <string>
+using namespace std;
+
+class Article {
+private:
+    string nom;
+    double prix;
+    double tva;
+public:
+    Article(string n, double p, double t) : nom(n), prix(p), tva(t) {}
+    double getPrix()  { return prix; }
+    void   setPrix(double p) { if (p > 0) prix = p; }
+    double prixFinal() { return prix * (1 + tva / 100); }
+    void   afficher() {
+        cout << "Nom: " << nom << " | Prix HT: " << prix
+             << " | TVA: " << tva << "% | TTC: " << prixFinal() << endl;
+    }
+};
+
+class ArticleEnSolde : public Article {
+private:
+    double remise;   // en %
+public:
+    ArticleEnSolde(string n, double p, double t, double r)
+        : Article(n, p, t), remise(r) {}
+
+    double prixFinal() {   // REDÉFINITION
+        double base = Article::prixFinal();
+        return base * (1 - remise / 100);
+    }
+    void afficher() {      // REDÉFINITION
+        Article::afficher();
+        cout << "Remise: " << remise << "% | Prix soldé: " << prixFinal() << endl;
+    }
+};
+
+Exercice 2 : Aide & AidePeriodique
+class Aide {
+protected:
+    string description;
+    double valeur;       // en dinars
+    int    codeDossier;
+public:
+    Aide(string d, double v, int c) : description(d), valeur(v), codeDossier(c) {}
+    void afficher() {
+        cout << "Description: " << description
+             << " | Valeur: " << valeur << " Dt
+             << " | Dossier: " << codeDossier << endl;
+    }
+};
+
+class AidePeriodique : public Aide {
+private:
+    string periodicite;  // "mensuelle" ou "annuelle"
+    int    nbFoisFourni;
+    int    nbFoisRestant;
+public:
+    AidePeriodique(string d, double v, int c, string p, int fourni, int restant)
+        : Aide(d, v, c), periodicite(p), nbFoisFourni(fourni), nbFoisRestant(restant) {}
+
+    void afficher() {
+        Aide::afficher();
+        cout << "Periodicite: " << periodicite
+             << " | Fourni: " << nbFoisFourni
+             << " | Restant: " << nbFoisRestant << endl;
+    }
+};
+
+Exercice 3 : Comptes Bancaires
+class Compte {
+protected:
+    int    rib;
+    double solde;
+public:
+    Compte(int r, double s) : rib(r), solde(s) {}
+    virtual void deposer(double m)  { solde += m; }
+    virtual void retirer(double m)  { solde -= m; }
+    virtual void afficher() {
+        cout << "RIB: " << rib << " | Solde: " << solde << endl;
+    }
+};
+
+class CompteEpargne : public Compte {
+private:
+    double tauxInteret;
+    const double SOLDE_MIN = 5.0;
+public:
+    CompteEpargne(int r, double s, double t) : Compte(r, s), tauxInteret(t) {}
+    void retirer(double m) {
+        if (solde - m >= SOLDE_MIN) solde -= m;
+        else cout << "Solde minimum 5 Dt non respecté!" << endl;
+    }
+    double calculerInteret() { return solde * tauxInteret / 100; }
+    void afficher() {
+        Compte::afficher();
+        cout << "Taux: " << tauxInteret << "% | Intérêt: " << calculerInteret() << endl;
+    }
+};
+
+class CompteCourant : public Compte {
+private:
+    double seuilMin;
+public:
+    CompteCourant(int r, double s, double sMin = -500.0)
+        : Compte(r, s), seuilMin(sMin) {}
+    void retirer(double m) {
+        if (solde - m >= seuilMin) solde -= m;
+        else cout << "Dépassement du seuil minimum!" << endl;
+    }
+    void afficher() {
+        Compte::afficher();
+        cout << "Seuil minimum: " << seuilMin << endl;
+    }
+};
+
+Structure d'un Menu type
+int main() {
+    int choix;
+    do {
+        cout << "\n=== MENU ===" << endl;
+        cout << "1. Créer" << endl;
+        cout << "2. Afficher" << endl;
+        cout << "0. Quitter" << endl;
+        cout << "Choix : "; cin >> choix;
+
+        switch(choix) {
+            case 1: { /* ... */ break; }
+            case 2: { /* ... */ break; }
+            case 0: cout << "Au revoir!" << endl; break;
+            default: cout << "Choix invalide!" << endl;
+        }
+    } while (choix != 0);
+    return 0;
+}
+
+Résumé POO C++ — Chapitres 1, 3, 4 & 5  |  Document autorisé au test pratique

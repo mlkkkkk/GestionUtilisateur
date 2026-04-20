@@ -1,0 +1,303 @@
+
+Programmation Orientée Objet C++ — ESPRIT
+
+Test	Sujet	Concepts clés
+Test A (Version B)	Supervision de Capteurs industriels	Héritage, Collections, redéfinition de méthodes
+
+Test B	Catalogue d'Événements Centre de Loisirs	Héritage, attribut statique, Collection avec unicité
+ 
+
+Hiérarchie : Capteur (classe de base)  CapteurTemperature (classe dérivée)  ListeCapteurTemperature
+(collection)
+
+Capteur.h
+#ifndef CAPTEUR_H #define CAPTEUR_H #include <string> using namespace std;
+
+class Capteur {
+protected:	// protected : accessible dans les classes derivees int identifiant;
+float valeurMesuree; string unite;
+public:
+// Question 1 : constructeur parametré Capteur(int id, float valeur, string u);
+// Question 2 : afficher void afficher();
+};
+#endif
+
+Capteur.cpp
+#include "Capteur.h" #include <iostream> using namespace std;
+
+Capteur::Capteur(int id, float valeur, string u) { identifiant	= id;
+valeurMesuree = valeur; unite	= u;
+}
+
+void Capteur::afficher() {
+cout << "ID	: " << identifiant	<< endl;
+cout << "Valeur	: " << valeurMesuree << " " << unite << endl;
+}
+
+CapteurTemperature.h
+#ifndef CAPTEURTEMPERATURE_H #define CAPTEURTEMPERATURE_H
+#include "Capteur.h"
+
+class CapteurTemperature : public Capteur { private:
+float seuilCritique; int	niveauBatterie;
+string etat;	// "actif" ou "suspendu" public:
+// Question 3 : constructeur qui initialise EXPLICITEMENT tous les attributs CapteurTemperature(int id, float valeur, string u,
+float seuil, int batterie, string etat);
+void afficher();	// redefinition
+// Getters necessaires int	getId();
+int	getNiveauBatterie(); string getEtat();
+void	setEtat(string e);
+};
+#endif
+ 
+CapteurTemperature.cpp
+#include "CapteurTemperature.h" #include <iostream>
+using namespace std;
+
+CapteurTemperature::CapteurTemperature(int id, float valeur, string u,
+float seuil, int batterie, string e)
+: Capteur(id, valeur, u)	// appel obligatoire du constructeur parent
+{
+seuilCritique = seuil; niveauBatterie = batterie; etat	= e;
+}
+
+void CapteurTemperature::afficher() {
+Capteur::afficher();	// reutilise l'affichage du parent cout << "Seuil critique : " << seuilCritique << endl;
+cout << "Batterie	: " << niveauBatterie << "%" << endl; cout << "Etat	: " << etat	<< endl;
+}
+
+int	CapteurTemperature::getId()	{ return identifiant; } int	CapteurTemperature::getNiveauBatterie() { return niveauBatterie; } string CapteurTemperature::getEtat()	{ return etat; }
+void	CapteurTemperature::setEtat(string e)	{ etat = e; }
+
+ListeCapteurTemperature.h
+#ifndef LISTECAPTEURTEMPERATURE_H #define LISTECAPTEURTEMPERATURE_H
+#include "CapteurTemperature.h"
+
+class ListeCapteurTemperature { private:
+CapteurTemperature tab[100]; int n;
+public:
+ListeCapteurTemperature();
+void ajouter(CapteurTemperature c);	// Q4a void afficher();		// Q4b
+void suspendre(int id);	// Q4c : suspend si batterie < 30
+};
+#endif
+
+ListeCapteurTemperature.cpp
+#include "ListeCapteurTemperature.h" #include <iostream>
+using namespace std; ListeCapteurTemperature::ListeCapteurTemperature() { n = 0; }
+// Q4a — Ajouter un capteur
+void ListeCapteurTemperature::ajouter(CapteurTemperature c) { tab[n] = c;
+n++;
+}
+
+// Q4b — Afficher tous les capteurs
+void ListeCapteurTemperature::afficher() {
+cout << "=== Liste des capteurs de temperature ===" << endl; for (int i = 0; i < n; i++) {
+cout << "--- Capteur " << i+1 << " ---" << endl; tab[i].afficher();
+}
+ 
+}
+
+// Q4c — Suspendre si niveauBatterie < 30
+void ListeCapteurTemperature::suspendre(int id) { for (int i = 0; i < n; i++) {
+if (tab[i].getId() == id) {
+if (tab[i].getNiveauBatterie() < 30) { tab[i].setEtat("suspendu");
+cout << "Capteur " << id << " suspendu." << endl;
+} else {
+cout << "Batterie OK, capteur non suspendu." << endl;
+}
+return;
+}
+}
+cout << "Capteur non trouve." << endl;
+}
+main.cpp — Question 5 : Test
+#include <iostream>
+#include "ListeCapteurTemperature.h" using namespace std;
+
+int main() {
+CapteurTemperature c1(1, 75.5, "C", 80.0, 45, "actif");
+CapteurTemperature c2(2, 92.3, "C", 80.0, 25, "actif"); // batterie < 30
+CapteurTemperature c3(3, 60.0, "C", 80.0, 60, "actif");
+
+ListeCapteurTemperature liste; liste.ajouter(c1); liste.ajouter(c2); liste.ajouter(c3);
+
+liste.afficher();
+
+cout << "\n--- Test suspension ---" << endl; liste.suspendre(1);	// batterie 45 -> NON suspendu liste.suspendre(2);	// batterie 25 -> SUSPENDU
+
+cout << "\n--- Apres suspension ---" << endl; liste.afficher();
+
+return 0;
+}
+Points clés — Test A
+Point	Explication
+protected	Attributs de Capteur accessibles dans CapteurTemperature
+: Capteur(...)	Appel constructeur parent dans la liste d'initialisation
+Capteur::afficher()	Appel version parent dans la redefinition
+batterie < 30	Condition de suspension dans suspendre()
+.h + .cpp	Separation declaration / definition obligatoire
+ 
+
+Hiérarchie : EvenementPreparation (classe de base)  Evenement (classe dérivée, avec attribut statique) 
+CentreLoisirs (collection)
+
+EvenementPreparation.h
+#ifndef EVENEMENTPREPARATION_H #define EVENEMENTPREPARATION_H
+#include <string> using namespace std;
+
+class EvenementPreparation { protected:
+int	id; string titre;
+string date;	// format jour/mois/annee public:
+EvenementPreparation(int id, string titre, string date); void afficher();
+// Getters necessaires int	getId();
+string getTitre();
+};
+#endif
+
+EvenementPreparation.cpp
+#include "EvenementPreparation.h" #include <iostream>
+using namespace std;
+
+EvenementPreparation::EvenementPreparation(int i, string t, string d) { id	= i;
+titre = t; date = d;
+}
+
+void EvenementPreparation::afficher() { cout << "ID	: " << id	<< endl; cout << "Titre : " << titre << endl; cout << "Date : " << date << endl;
+}
+
+int	EvenementPreparation::getId()	{ return id; } string EvenementPreparation::getTitre() { return titre; }
+
+Evenement.h — avec attribut statique
+#ifndef EVENEMENT_H #define EVENEMENT_H
+#include "EvenementPreparation.h"
+
+class Evenement : public EvenementPreparation { private:
+int capaciteMax;
+static int nbTotalEvenements;	// partagé par toutes les instances public:
+Evenement(int id, string titre, string date, int capacite);
+~Evenement();	// decremente le compteur statique
+void afficher();	// redefinition int getCapaciteMax();
+static int getNbTotal();	// methode statique
+ 
+};
+#endif
+
+Evenement.cpp
+#include "Evenement.h" #include <iostream> using namespace std;
+
+// Definition de l'attribut statique (obligatoire dans le .cpp) int Evenement::nbTotalEvenements = 0;
+
+Evenement::Evenement(int id, string titre, string date, int capacite)
+: EvenementPreparation(id, titre, date)	// appel constructeur parent
+{
+capaciteMax = capacite;
+nbTotalEvenements++;	// incrementation a chaque creation
+}
+
+Evenement::~Evenement() {
+nbTotalEvenements--;	// decrementation a chaque destruction
+}
+
+void Evenement::afficher() { EvenementPreparation::afficher();	// affichage parent cout << "Capacite max : " << capaciteMax << endl;
+cout << "Statut	: " << (capaciteMax == 0 ? "Complet" : "Disponible") << endl;
+}
+
+int Evenement::getCapaciteMax()	{ return capaciteMax; }
+int Evenement::getNbTotal()	{ return nbTotalEvenements; }
+
+CentreLoisirs.h
+#ifndef CENTRELOISIRS_H #define CENTRELOISIRS_H #include "Evenement.h"
+
+class CentreLoisirs { private:
+string	nom; Evenement tab[100]; int	n;
+public:
+CentreLoisirs(string nom);
+// a. Ajouter en verifiant l'unicite de l'ID void ajouter(Evenement e);
+// b. Afficher tous les evenements d'un titre donne void afficherParTitre(string titre);
+// c. Supprimer les evenements complets (capacite == 0) void supprimerComplets();
+// d. Afficher le nombre total (statique) static void afficherNbTotal();
+};
+#endif
+
+CentreLoisirs.cpp
+#include "CentreLoisirs.h" #include <iostream>
+using namespace std;
+
+CentreLoisirs::CentreLoisirs(string n) { nom = n;
+this->n = 0;
+}
+ 
+// a. Ajouter avec verification unicite ID void CentreLoisirs::ajouter(Evenement e) {
+for (int i = 0; i < n; i++) {
+if (tab[i].getId() == e.getId()) {
+cout << "Evenement avec ID " << e.getId() << " deja existant !" << endl; return;
+}
+}
+tab[n] = e; n++;
+cout << "Evenement ajoute." << endl;
+}
+
+// b. Afficher evenements par titre
+void CentreLoisirs::afficherParTitre(string titre) {
+cout << "=== Evenements avec le titre : " << titre << " ===" << endl; bool trouve = false;
+for (int i = 0; i < n; i++) {
+if (tab[i].getTitre() == titre) { tab[i].afficher();
+cout << "---" << endl; trouve = true;
+}
+}
+if (!trouve) cout << "Aucun evenement trouve." << endl;
+}
+
+// c. Supprimer les evenements complets (capaciteMax == 0) void CentreLoisirs::supprimerComplets() {
+int i = 0; while (i < n) {
+if (tab[i].getCapaciteMax() == 0) {
+// decalage vers la gauche
+for (int j = i; j < n-1; j++) { tab[j] = tab[j+1];
+}
+n--;
+cout << "Evenement complet supprime." << endl;
+} else {
+i++;
+}
+}
+}
+
+// d. Afficher le nombre total (statique) void CentreLoisirs::afficherNbTotal() {
+cout << "Nombre total d'evenements : " << Evenement::getNbTotal() << endl;
+}
+
+main.cpp — Test complet
+#include <iostream> #include "CentreLoisirs.h" using namespace std;
+
+int main() {
+// Creation d'evenements
+Evenement e1(1, "Concert Jazz",	"10/06/2026", 200);
+Evenement e2(2, "Atelier Poterie","15/06/2026", 0);	// complet ! Evenement e3(3, "Concert Jazz",	"20/06/2026", 150);
+Evenement e4(4, "Yoga Detente",	"25/06/2026", 30); CentreLoisirs centre("Centre Culturel Tunis");
+// a. Ajouter
+ 
+centre.ajouter(e1); centre.ajouter(e2); centre.ajouter(e3); centre.ajouter(e4);
+centre.ajouter(e1);  // doublon -> message d'erreur
+
+// b. Afficher par titre cout << "\n";
+centre.afficherParTitre("Concert Jazz");
+
+// c. Supprimer les complets
+cout << "\n--- Suppression des evenements complets ---" << endl; centre.supprimerComplets();
+
+// d. Afficher le nombre total (statique) cout << "\n"; CentreLoisirs::afficherNbTotal();
+
+return 0;
+}
+Points clés — Test B
+Point	Explication
+Attribut statique	int Evenement::nbTotalEvenements = 0; defini dans le .cpp
+++ dans constructeur	nbTotalEvenements++ a chaque creation d'objet
+-- dans destructeur	nbTotalEvenements-- a chaque destruction d'objet
+: EvenementPrep(...)	Appel constructeur parent obligatoire dans Evenement
+Unicite ID	Boucle de recherche avant ajouter() pour eviter les doublons
+supprimerComplets	Decaler le tableau quand capaciteMax == 0, puis n--
+afficherNbTotal	Methode static -> appellee via CentreLoisirs::afficherNbTotal()
+
+Bon courage pour tes examens ! ■

@@ -14,10 +14,45 @@
 #include <QTimer>
 #include <QMap>
 #include <QPropertyAnimation>
-#include <QRegularExpression>
 #include <QList>
+#include <QSet>
+#include <QColor>
+#include <QBrush>
+#include <QDebug>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QPrinter>
+#include <QTextDocument>
+#include <QFileDialog>
+#include <QDateTime>
+#include <QPageLayout>
+#include <QPageSize>
+#include <QTextStream>
+#include <QHBoxLayout>
+#include <QTabWidget>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QFrame>
+#include <QChartView>
+#include <QPieSeries>
+#include <QPieSlice>
+#include <QBarSeries>
+#include <QBarSet>
+#include <QLegend>
+#include <QBarCategoryAxis>
+#include <QLineSeries>
+#include <QDateTimeAxis>
+#include <QValueAxis>
+#include <QChart>
 
-struct Material {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+namespace QtCharts {}
+using namespace QtCharts;
+#endif
+
+
+    struct Material {
     int id;
     QString name;
     QString type;
@@ -36,6 +71,7 @@ public:
     ~Matriele();
 
 private slots:
+    void changePage(int index);
     void addMaterial();
     void modifyMaterial();
     void deleteMaterial();
@@ -47,11 +83,12 @@ private slots:
     void showStatistics();
     void generateQRCode();
     void updateBlinkingState();
+    void checkLowStock();
+    void testBlinking();
     void importFromFile();
     void saveData();
     void loadData();
     void animateField();
-    void animateButton();
 
 private:
     void setupMaterialPage();
@@ -59,10 +96,17 @@ private:
     void setupShortcuts();
     void updateMaterialTable();
     void updateStatusBar();
+    void loadMaterialsFromDB();
     QPushButton* createStyledButton(const QString& text, const QString& color);
     bool validateMaterialFields();
     bool isValidName(const QString& name);
     void showNotification(const QString& message, bool isError = false);
+    void showAdvancedStatistics();
+    QChart* createTypePieChart();
+    QChart* createStatusPieChart();
+    QChart* createQuantityBarChart();
+    QChart* createStockLineChart();
+    QString generateHtmlReport();
 
     // Material members
     QList<Material> materialsList;
@@ -73,22 +117,26 @@ private:
     QLineEdit *searchEdit;
     QComboBox *sortComboBox;
     QPushButton *modifyBtn, *exportBtn, *statsBtn, *qrBtn, *importBtn, *saveBtn;
+
+    // Timers
     QTimer *blinkTimer;
     QTimer *autoSaveTimer;
+    QTimer *lowStockCheckTimer;
+
     bool blinkState;
+    QSet<int> lowStockIds;
+
     int nextId;
     bool dataModified;
 
-    // UI members
     QStackedWidget* pagesWidget;
+    QListWidget* navList;
     QStatusBar* m_statusBar;
     QLabel* statusLabel;
     QLabel* statsLabel;
 
-    // Animation
     QMap<QLineEdit*, QPropertyAnimation*> fieldAnimations;
 
-    // Constantes
     static const QString APP_VERSION;
     static const QString APP_NAME;
     static const int AUTO_SAVE_INTERVAL;

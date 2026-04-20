@@ -1,19 +1,21 @@
-// loginwindow.cpp (fixed version)
 #include "loginwindow.h"
 #include "userwindow.h"
+#include "connection.h"
+
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QFormLayout>
 #include <QFrame>
 #include <QGraphicsDropShadowEffect>
 #include <QSqlQuery>
 #include <QSqlError>
-#include <QDialogButtonBox>
+#include <QSqlDatabase>
+#include <QDialog>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QMessageBox>
-#include <QRegularExpression>
+#include <QSizePolicy>
+#include <QColor>
 
 LoginWindow::LoginWindow(QWidget *parent)
     : QWidget(parent)
@@ -22,7 +24,7 @@ LoginWindow::LoginWindow(QWidget *parent)
     setFixedSize(550, 750);
     setupUI();
 
-    QGraphicsDropShadowEffect *shadowEffect = new QGraphicsDropShadowEffect;
+    QGraphicsDropShadowEffect *shadowEffect = new QGraphicsDropShadowEffect(this);
     shadowEffect->setBlurRadius(25);
     shadowEffect->setColor(QColor(0, 0, 0, 100));
     shadowEffect->setOffset(0, 0);
@@ -37,8 +39,7 @@ void LoginWindow::setupUI()
 {
     setStyleSheet(
         "QWidget {"
-        "    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
-        "                                 stop:0 #667eea, stop:1 #764ba2);"
+        "    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #667eea, stop:1 #764ba2);"
         "    font-family: 'Segoe UI', Arial, sans-serif;"
         "}"
         "QFrame {"
@@ -65,8 +66,7 @@ void LoginWindow::setupUI()
         "    border: 2px solid #764ba2;"
         "}"
         "QPushButton {"
-        "    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
-        "                                 stop:0 #667eea, stop:1 #764ba2);"
+        "    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #667eea, stop:1 #764ba2);"
         "    color: white;"
         "    border: none;"
         "    border-radius: 12px;"
@@ -77,12 +77,7 @@ void LoginWindow::setupUI()
         "    min-width: 350px;"
         "}"
         "QPushButton:hover {"
-        "    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
-        "                                 stop:0 #5a67d8, stop:1 #6b46a0);"
-        "}"
-        "QPushButton:pressed {"
-        "    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
-        "                                 stop:0 #4c51bf, stop:1 #553c8b);"
+        "    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #5a67d8, stop:1 #6b46a0);"
         "}"
         "QLabel {"
         "    color: #2d3748;"
@@ -105,7 +100,6 @@ void LoginWindow::setupUI()
     frameLayout->setSpacing(20);
     frameLayout->setAlignment(Qt::AlignHCenter);
 
-    // Title
     titleLabel = new QLabel("🔐 CONNEXION");
     titleLabel->setStyleSheet(
         "QLabel {"
@@ -118,7 +112,6 @@ void LoginWindow::setupUI()
     titleLabel->setAlignment(Qt::AlignCenter);
     frameLayout->addWidget(titleLabel);
 
-    // Subtitle
     QLabel *subtitleLabel = new QLabel("Système de Gestion Collaborative");
     subtitleLabel->setStyleSheet(
         "QLabel {"
@@ -130,7 +123,6 @@ void LoginWindow::setupUI()
     subtitleLabel->setAlignment(Qt::AlignCenter);
     frameLayout->addWidget(subtitleLabel);
 
-    // Email section
     QLabel *emailLabel = new QLabel("📧 Adresse Email");
     emailLabel->setStyleSheet(
         "QLabel {"
@@ -141,11 +133,10 @@ void LoginWindow::setupUI()
         "    margin-bottom: 5px;"
         "}"
         );
-    emailLabel->setAlignment(Qt::AlignLeft);
     frameLayout->addWidget(emailLabel);
 
     emailEdit = new QLineEdit;
-    emailEdit->setPlaceholderText("admin@entreprise.com");
+    emailEdit->setPlaceholderText("client@entreprise.com");
     emailEdit->setEchoMode(QLineEdit::Normal);
     emailEdit->setMinimumHeight(55);
     emailEdit->setMinimumWidth(350);
@@ -153,7 +144,6 @@ void LoginWindow::setupUI()
     emailEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     frameLayout->addWidget(emailEdit, 0, Qt::AlignHCenter);
 
-    // Password section
     QLabel *passwordLabel = new QLabel("🔑 Mot de passe");
     passwordLabel->setStyleSheet(
         "QLabel {"
@@ -164,7 +154,6 @@ void LoginWindow::setupUI()
         "    margin-bottom: 5px;"
         "}"
         );
-    passwordLabel->setAlignment(Qt::AlignLeft);
     frameLayout->addWidget(passwordLabel);
 
     QHBoxLayout *passwordLayout = new QHBoxLayout;
@@ -200,7 +189,6 @@ void LoginWindow::setupUI()
     passwordLayout->addWidget(togglePasswordBtn);
     frameLayout->addLayout(passwordLayout);
 
-    // Forgot password link
     forgotPasswordBtn = new QPushButton("Mot de passe oublié ?");
     forgotPasswordBtn->setCursor(Qt::PointingHandCursor);
     forgotPasswordBtn->setStyleSheet(
@@ -221,7 +209,6 @@ void LoginWindow::setupUI()
         );
     frameLayout->addWidget(forgotPasswordBtn, 0, Qt::AlignRight);
 
-    // Error label
     errorLabel = new QLabel;
     errorLabel->setStyleSheet(
         "QLabel {"
@@ -240,32 +227,14 @@ void LoginWindow::setupUI()
     errorLabel->setWordWrap(true);
     frameLayout->addWidget(errorLabel, 0, Qt::AlignHCenter);
 
-    // Login button
     loginButton = new QPushButton("SE CONNECTER");
     loginButton->setCursor(Qt::PointingHandCursor);
     loginButton->setMinimumHeight(60);
     loginButton->setMinimumWidth(350);
     loginButton->setMaximumWidth(400);
     loginButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    loginButton->setStyleSheet(
-        "QPushButton {"
-        "    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
-        "                                 stop:0 #667eea, stop:1 #764ba2);"
-        "    color: white;"
-        "    border: none;"
-        "    border-radius: 12px;"
-        "    font-size: 18px;"
-        "    font-weight: bold;"
-        "    margin: 20px 0px 10px 0px;"
-        "}"
-        "QPushButton:hover {"
-        "    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,"
-        "                                 stop:0 #5a67d8, stop:1 #6b46a0);"
-        "}"
-        );
     frameLayout->addWidget(loginButton, 0, Qt::AlignHCenter);
 
-    // Info section
     QFrame *infoFrame = new QFrame;
     infoFrame->setStyleSheet(
         "QFrame {"
@@ -280,7 +249,7 @@ void LoginWindow::setupUI()
 
     QVBoxLayout *infoLayout = new QVBoxLayout(infoFrame);
 
-    QLabel *infoTitle = new QLabel("👥 Utilisateurs de démo");
+    QLabel *infoTitle = new QLabel("👥 Compte Oracle");
     infoTitle->setStyleSheet(
         "QLabel {"
         "    font-size: 16px;"
@@ -292,11 +261,10 @@ void LoginWindow::setupUI()
     infoTitle->setAlignment(Qt::AlignCenter);
     infoLayout->addWidget(infoTitle);
 
-    // Demo user 1
     QLabel *user1 = new QLabel(
         "<div style='text-align: center;'>"
-        "<span style='color: #2d3748; font-size: 14px;'>📧 <b>admin@entreprise.com</b></span><br>"
-        "<span style='color: #2d3748; font-size: 14px;'>🔑 <b>admin123</b></span>"
+        "<span style='color: #2d3748; font-size: 14px;'>📧 <b>client@entreprise.com</b></span><br>"
+        "<span style='color: #2d3748; font-size: 14px;'>🔑 <b>tayssir1</b></span>"
         "</div>"
         );
     user1->setTextFormat(Qt::RichText);
@@ -304,47 +272,10 @@ void LoginWindow::setupUI()
     user1->setStyleSheet("margin: 5px; padding: 5px;");
     infoLayout->addWidget(user1);
 
-    // Separator
-    QFrame *line1 = new QFrame;
-    line1->setFrameShape(QFrame::HLine);
-    line1->setStyleSheet("background-color: #e2e8f0; max-height: 1px; margin: 10px 20px;");
-    infoLayout->addWidget(line1);
-
-    // Demo user 2
-    QLabel *user2 = new QLabel(
-        "<div style='text-align: center;'>"
-        "<span style='color: #2d3748; font-size: 14px;'>📧 <b>rh@entreprise.com</b></span><br>"
-        "<span style='color: #2d3748; font-size: 14px;'>🔑 <b>rh123</b></span>"
-        "</div>"
-        );
-    user2->setTextFormat(Qt::RichText);
-    user2->setAlignment(Qt::AlignCenter);
-    user2->setStyleSheet("margin: 5px; padding: 5px;");
-    infoLayout->addWidget(user2);
-
-    // Separator
-    QFrame *line2 = new QFrame;
-    line2->setFrameShape(QFrame::HLine);
-    line2->setStyleSheet("background-color: #e2e8f0; max-height: 1px; margin: 10px 20px;");
-    infoLayout->addWidget(line2);
-
-    // Demo user 3
-    QLabel *user3 = new QLabel(
-        "<div style='text-align: center;'>"
-        "<span style='color: #2d3748; font-size: 14px;'>📧 <b>user@demo.com</b></span><br>"
-        "<span style='color: #2d3748; font-size: 14px;'>🔑 <b>demo123</b></span>"
-        "</div>"
-        );
-    user3->setTextFormat(Qt::RichText);
-    user3->setAlignment(Qt::AlignCenter);
-    user3->setStyleSheet("margin: 5px; padding: 5px;");
-    infoLayout->addWidget(user3);
-
     frameLayout->addWidget(infoFrame, 0, Qt::AlignHCenter);
 
     mainLayout->addWidget(loginFrame);
 
-    // Connections
     connect(loginButton, &QPushButton::clicked, this, &LoginWindow::handleLogin);
     connect(togglePasswordBtn, &QPushButton::clicked, this, &LoginWindow::togglePasswordVisibility);
     connect(forgotPasswordBtn, &QPushButton::clicked, this, &LoginWindow::showForgotPasswordDialog);
@@ -365,44 +296,65 @@ void LoginWindow::togglePasswordVisibility()
 
 bool LoginWindow::validateLogin(const QString &email, const QString &password)
 {
-    if (Connection::getInstance()->isOpen()) {
-        QSqlDatabase db = Connection::getInstance()->getDatabase();
-        QSqlQuery query(db);
+    QSqlDatabase db = Connection::getInstance()->getDatabase();
 
-        query.prepare("SELECT * FROM UTILISATEURS WHERE EMAIL = :email AND STATUT = 'Actif'");
-        query.bindValue(":email", email);
-
-        if (query.exec() && query.next()) {
-            if (email == "admin@entreprise.com" && password == "admin123") return true;
-            if (email == "rh@entreprise.com" && password == "rh123") return true;
-        }
+    if (!db.isOpen()) {
+        return false;
     }
 
-    if (email == "admin@entreprise.com" && password == "admin123") return true;
-    if (email == "rh@entreprise.com" && password == "rh123") return true;
-    if (email == "user@demo.com" && password == "demo123") return true;
+    QSqlQuery query(db);
+    query.prepare(
+        "SELECT ID_UTILISATEUR "
+        "FROM UTILISATEUR "
+        "WHERE LOWER(TRIM(EMAIL)) = LOWER(?) "
+        "AND TRIM(MOT_DE_PASSE) = ?"
+        );
 
-    return false;
+    query.addBindValue(email.trimmed());
+    query.addBindValue(password.trimmed());
+
+    if (!query.exec()) {
+        QMessageBox::warning(this, "Erreur Oracle", query.lastError().text());
+        return false;
+    }
+
+    return query.next();
 }
 
 void LoginWindow::showForgotPasswordDialog()
 {
     QString email = emailEdit->text().trimmed();
+
     if (email.isEmpty()) {
-        QMessageBox::warning(this, "Email requis", "Veuillez entrer votre adresse email pour récupérer votre compte.");
+        QMessageBox::warning(this, "Email requis", "Veuillez entrer votre adresse email.");
         return;
     }
 
-    // Check if email exists in the system
-    bool emailExists = false;
+    QSqlDatabase db = Connection::getInstance()->getDatabase();
 
-    // For demo purposes, check against the demo users
-    if (email == "admin@entreprise.com" || email == "rh@entreprise.com" || email == "user@demo.com") {
-        emailExists = true;
+    if (!db.isOpen()) {
+        QMessageBox::warning(this, "Erreur Base de données",
+                             "La base de données n'est pas connectée.");
+        return;
     }
 
-    if (!emailExists) {
-        QMessageBox::warning(this, "Email non trouvé", "Aucun compte associé à cette adresse email.");
+    QSqlQuery query(db);
+    query.prepare(
+        "SELECT ID_UTILISATEUR "
+        "FROM UTILISATEUR "
+        "WHERE LOWER(TRIM(EMAIL)) = LOWER(?)"
+        );
+
+    query.addBindValue(email);
+
+    if (!query.exec()) {
+        QMessageBox::warning(this, "Erreur Oracle", query.lastError().text());
+        return;
+    }
+
+    if (!query.next()) {
+        QMessageBox::warning(this, "Email non trouvé",
+                             "Aucun compte associé à cette adresse email.\nEmail saisi: " + email);
         return;
     }
 
@@ -411,17 +363,46 @@ void LoginWindow::showForgotPasswordDialog()
 
 void LoginWindow::showSecurityQuestionsDialog(const QString &email)
 {
+    QSqlDatabase db = Connection::getInstance()->getDatabase();
+
+    if (!db.isOpen()) {
+        QMessageBox::warning(this, "Erreur Base de données",
+                             "La base de données n'est pas connectée.");
+        return;
+    }
+
+    QSqlQuery query(db);
+    query.prepare(
+        "SELECT ID_UTILISATEUR, MOT_DE_PASSE, COULEUR_FAVORITE, NOM_ANIMAL, MATRICULE_VOITURE "
+        "FROM UTILISATEUR "
+        "WHERE LOWER(TRIM(EMAIL)) = LOWER(?)"
+        );
+
+    query.addBindValue(email.trimmed());
+
+    if (!query.exec()) {
+        QMessageBox::warning(this, "Erreur Oracle", query.lastError().text());
+        return;
+    }
+
+    if (!query.next()) {
+        QMessageBox::warning(this, "Email non trouvé",
+                             "Aucun compte associé à cette adresse email.");
+        return;
+    }
+
+    int userId = query.value(0).toInt();
+    QString password = query.value(1).toString();
+    QString favoriteColor = query.value(2).toString().trimmed();
+    QString petName = query.value(3).toString().trimmed();
+    QString carPlate = query.value(4).toString().trimmed();
+
     QDialog *dialog = new QDialog(this);
     dialog->setWindowTitle("Vérification de sécurité");
     dialog->setFixedSize(500, 450);
     dialog->setStyleSheet(
-        "QDialog {"
-        "    background-color: white;"
-        "}"
-        "QLabel {"
-        "    color: #2c3e50;"
-        "    font-size: 14px;"
-        "}"
+        "QDialog { background-color: white; }"
+        "QLabel { color: #2c3e50; font-size: 14px; }"
         "QLineEdit {"
         "    color: black;"
         "    background-color: white;"
@@ -439,22 +420,19 @@ void LoginWindow::showSecurityQuestionsDialog(const QString &email)
         "    font-size: 13px;"
         "    font-weight: bold;"
         "}"
-        "QPushButton:hover {"
-        "    background-color: #2980b9;"
-        "}"
+        "QPushButton:hover { background-color: #2980b9; }"
         );
 
     QVBoxLayout *layout = new QVBoxLayout(dialog);
     layout->setSpacing(20);
     layout->setContentsMargins(30, 30, 30, 30);
 
-    // Title
     QLabel *titleLabel = new QLabel("🔐 Vérification d'identité");
     titleLabel->setStyleSheet("font-size: 20px; font-weight: bold; color: #2c3e50;");
     titleLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(titleLabel);
 
-    QLabel *infoLabel = new QLabel("Pour des raisons de sécurité, veuillez répondre aux questions suivantes :");
+    QLabel *infoLabel = new QLabel("Pour récupérer votre mot de passe, répondez aux questions suivantes :");
     infoLabel->setWordWrap(true);
     infoLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(infoLabel);
@@ -464,24 +442,6 @@ void LoginWindow::showSecurityQuestionsDialog(const QString &email)
     separator->setStyleSheet("background-color: #e2e8f0; max-height: 1px;");
     layout->addWidget(separator);
 
-    // Get security questions based on email (demo data)
-    QString favoriteColor, petName, carPlate;
-
-    if (email == "admin@entreprise.com") {
-        favoriteColor = "Bleu";
-        petName = "Max";
-        carPlate = "123 TUN 456";
-    } else if (email == "rh@entreprise.com") {
-        favoriteColor = "Vert";
-        petName = "Bella";
-        carPlate = "234 TUN 567";
-    } else if (email == "user@demo.com") {
-        favoriteColor = "Rouge";
-        petName = "Charlie";
-        carPlate = "345 TUN 678";
-    }
-
-    // Question 1: Favorite Color
     QLabel *colorQuestion = new QLabel("🎨 Quelle est votre couleur préférée ?");
     colorQuestion->setStyleSheet("font-weight: bold; margin-top: 10px;");
     QLineEdit *colorAnswer = new QLineEdit;
@@ -489,7 +449,6 @@ void LoginWindow::showSecurityQuestionsDialog(const QString &email)
     layout->addWidget(colorQuestion);
     layout->addWidget(colorAnswer);
 
-    // Question 2: Pet Name
     QLabel *petQuestion = new QLabel("🐕 Quel est le nom de votre animal de compagnie ?");
     petQuestion->setStyleSheet("font-weight: bold; margin-top: 10px;");
     QLineEdit *petAnswer = new QLineEdit;
@@ -497,7 +456,6 @@ void LoginWindow::showSecurityQuestionsDialog(const QString &email)
     layout->addWidget(petQuestion);
     layout->addWidget(petAnswer);
 
-    // Question 3: Car Plate
     QLabel *carQuestion = new QLabel("🚗 Quelle est la matricule de votre voiture ?");
     carQuestion->setStyleSheet("font-weight: bold; margin-top: 10px;");
     QLineEdit *carAnswer = new QLineEdit;
@@ -507,7 +465,6 @@ void LoginWindow::showSecurityQuestionsDialog(const QString &email)
 
     layout->addStretch();
 
-    // Buttons
     QHBoxLayout *buttonLayout = new QHBoxLayout;
     QPushButton *verifyBtn = new QPushButton("✅ Vérifier");
     QPushButton *cancelBtn = new QPushButton("❌ Annuler");
@@ -519,50 +476,55 @@ void LoginWindow::showSecurityQuestionsDialog(const QString &email)
     buttonLayout->addWidget(cancelBtn);
     layout->addLayout(buttonLayout);
 
-    // Connect buttons
-    connect(verifyBtn, &QPushButton::clicked, [this, dialog, email, favoriteColor, petName, carPlate, colorAnswer, petAnswer, carAnswer]() {
-        QString color = colorAnswer->text().trimmed();
-        QString pet = petAnswer->text().trimmed();
-        QString car = carAnswer->text().trimmed();
+    connect(verifyBtn, &QPushButton::clicked,
+            [this, dialog, userId, password, favoriteColor, petName, carPlate,
+             colorAnswer, petAnswer, carAnswer]() {
 
-        // Compare answers (case-insensitive)
-        if (color.compare(favoriteColor, Qt::CaseInsensitive) == 0 &&
-            pet.compare(petName, Qt::CaseInsensitive) == 0 &&
-            car.compare(carPlate, Qt::CaseInsensitive) == 0) {
+                QString color = colorAnswer->text().trimmed();
+                QString pet = petAnswer->text().trimmed();
+                QString car = carAnswer->text().trimmed();
 
-            dialog->accept();
-            QMessageBox::information(this, "Vérification réussie",
-                                     "Vos réponses sont correctes !\n"
-                                     "Vous allez être redirigé vers l'application.");
+                bool colorOk = color.compare(favoriteColor, Qt::CaseInsensitive) == 0;
+                bool petOk = pet.compare(petName, Qt::CaseInsensitive) == 0;
+                bool carOk = car.compare(carPlate, Qt::CaseInsensitive) == 0;
 
-            // Emit login success and close windows
-            emit loginSuccess();
-            close();
-        } else {
-            QString errorMessage = "❌ Vos réponses sont incorrectes.\n\n";
-            if (color.compare(favoriteColor, Qt::CaseInsensitive) != 0) {
-                errorMessage += "• Couleur préférée incorrecte\n";
-            }
-            if (pet.compare(petName, Qt::CaseInsensitive) != 0) {
-                errorMessage += "• Nom de l'animal incorrect\n";
-            }
-            if (car.compare(carPlate, Qt::CaseInsensitive) != 0) {
-                errorMessage += "• Matricule de la voiture incorrecte\n";
-            }
+                if (colorOk && petOk && carOk) {
+                    dialog->accept();
 
-            QMessageBox::warning(dialog, "Erreur de vérification", errorMessage);
-        }
-    });
+                    QMessageBox::information(this, "Mot de passe récupéré",
+                                             "Votre mot de passe est : " + password);
+
+                    emit loginSuccess(userId);
+                    close();
+                } else {
+                    QString errorMessage = "❌ Vos réponses sont incorrectes.\n\n";
+
+                    if (!colorOk) {
+                        errorMessage += "• Couleur préférée incorrecte\n";
+                    }
+
+                    if (!petOk) {
+                        errorMessage += "• Nom de l'animal incorrect\n";
+                    }
+
+                    if (!carOk) {
+                        errorMessage += "• Matricule de la voiture incorrecte\n";
+                    }
+
+                    QMessageBox::warning(dialog, "Erreur de vérification", errorMessage);
+                }
+            });
 
     connect(cancelBtn, &QPushButton::clicked, dialog, &QDialog::reject);
 
     dialog->exec();
+    dialog->deleteLater();
 }
 
 void LoginWindow::handleLogin()
 {
     QString email = emailEdit->text().trimmed();
-    QString password = passwordEdit->text();
+    QString password = passwordEdit->text().trimmed();
 
     if (email.isEmpty() || password.isEmpty()) {
         errorLabel->setText("❌ Veuillez remplir tous les champs");
@@ -570,14 +532,43 @@ void LoginWindow::handleLogin()
         return;
     }
 
-    if (validateLogin(email, password)) {
-        errorLabel->setVisible(false);
-        emit loginSuccess();
-        close();
+    QSqlDatabase db = Connection::getInstance()->getDatabase();
+    
+    if (db.isOpen()) {
+        QSqlQuery query(db);
+        query.prepare(
+            "SELECT ID_UTILISATEUR "
+            "FROM UTILISATEUR "
+            "WHERE LOWER(TRIM(EMAIL)) = LOWER(?) "
+            "AND TRIM(MOT_DE_PASSE) = ?"
+        );
+        query.addBindValue(email);
+        query.addBindValue(password);
+        
+        if (query.exec() && query.next()) {
+            int userId = query.value(0).toInt();
+            errorLabel->setVisible(false);
+            emit loginSuccess(userId);
+            this->close();
+        } else {
+            errorLabel->setText("❌ Mot de passe incorrect");
+            errorLabel->setVisible(true);
+            QMessageBox::warning(this, "Erreur de connexion", "Mot de passe incorrect.");
+        }
     } else {
-        errorLabel->setText("❌ Email ou mot de passe incorrect");
-        errorLabel->setVisible(true);
-        passwordEdit->clear();
-        passwordEdit->setFocus();
+        // Mode hors ligne
+        if (email == "client@entreprise.com" && password == "tayssir1") {
+            errorLabel->setVisible(false);
+            emit loginSuccess(2);
+            this->close();
+        } else if (email == "admin@entreprise.com" && password == "admin123") {
+            errorLabel->setVisible(false);
+            emit loginSuccess(1);
+            this->close();
+        } else {
+            errorLabel->setText("❌ Mot de passe incorrect");
+            errorLabel->setVisible(true);
+            QMessageBox::warning(this, "Erreur de connexion", "Mot de passe incorrect.");
+        }
     }
 }

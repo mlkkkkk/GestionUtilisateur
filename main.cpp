@@ -1,4 +1,3 @@
-// main.cpp (updated)
 #include <QApplication>
 #include <QScreen>
 #include <QStyle>
@@ -13,7 +12,6 @@ int main(int argc, char *argv[])
 
     app.setStyle("Fusion");
 
-    // Enhanced global stylesheet
     app.setStyleSheet(
         "QMessageBox {"
         "    background-color: white;"
@@ -39,8 +37,8 @@ int main(int argc, char *argv[])
         "}"
         );
 
+    // Singleton : une seule instance de connexion pour tout le projet
     Connection* conn = Connection::getInstance();
-
     bool dbConnected = conn->establishConnection();
 
     if (!dbConnected) {
@@ -58,28 +56,14 @@ int main(int argc, char *argv[])
         }
     }
 
-    LoginWindow loginWindow;
-    UserWindow mainWindow;
+    LoginWindow *login = new LoginWindow();
+    UserWindow  *userWin = new UserWindow();
 
-    // Center the login window on screen
-    if (QScreen *screen = QApplication::primaryScreen()) {
-        QRect screenGeometry = screen->availableGeometry();
-        loginWindow.setGeometry(
-            QStyle::alignedRect(
-                Qt::LeftToRight,
-                Qt::AlignCenter,
-                loginWindow.size(),
-                screenGeometry
-                )
-            );
-    }
-
-    // Connect login success signal
-    QObject::connect(&loginWindow, &LoginWindow::loginSuccess, [&]() {
-        mainWindow.show();
+    QObject::connect(login, &LoginWindow::loginSuccess, [=](int userId) {
+        userWin->setCurrentUserId(userId);
+        userWin->show();
     });
-
-    loginWindow.show();
+    login->show();
 
     int result = app.exec();
 
